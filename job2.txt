@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Installing the Node version 10.x') {
+            steps {
+                sh 'sudo apt update'
+                sh 'sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates'
+                sh 'sudo apt-get install gcc g++ make'
+                sh 'sudo curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/yarnkey.gpg >/dev/null'
+                sh 'echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" | sudo tee /etc/apt/sources.list.d/yarn.list'
+                sh 'sudo apt-get update && sudo apt-get install yarn'
+                sh 'sudo curl -sL https://deb.nodesource.com/setup_10.x | sudo bash'
+                sh 'sudo apt-get install nodejs'
+                sh 'sudo node -v'
+            }
+        }
+        stage('Cloning the github repo') {
+            steps {
+                // Get some code from a GitHub repository
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/checkmarx-ltd/VSTS-Plugin.git']]])
+            }
+        }
+        stage('Installing npm code') {
+            steps {
+                // Install npm code
+                sh 'cd /var/lib/jenkins/workspace/${JOB_NAME} && npm install --no-optional'
+                sh 'cd /var/lib/jenkins/workspace/${JOB_NAME} && npm run-script build'
+            }
+        }
+        stage('Run tests') {
+            steps {
+                // Install npm code
+                sh 'npm install ts-node'
+                sh 'sudo npm install typescript -g'
+                sh 'sudo npm install typescript'
+                sh 'cd /var/lib/jenkins/workspace/${JOB_NAME} && npm test'
+            }
+        }
+        
+    }
+}

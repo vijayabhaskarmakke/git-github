@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Installing the Node version 10.x') {
+            steps {
+                sh 'sudo apt update'
+                sh 'sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates'
+                sh 'sudo apt-get install gcc g++ make'
+                sh 'sudo curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/yarnkey.gpg >/dev/null'
+                sh 'echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" | sudo tee /etc/apt/sources.list.d/yarn.list'
+                sh 'sudo apt-get update && sudo apt-get install yarn'
+                sh 'sudo curl -sL https://deb.nodesource.com/setup_14.x | sudo bash'
+                sh 'sudo apt-get install nodejs'
+                sh 'sudo node -v'
+		        sh 'sudo npm install -g npm@latest'
+            }
+        }
+        stage('Cloning the github repo') {
+            steps {
+                // Get some code from a GitHub repository
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/checkmarx-ltd/cxvscode.git']]])
+            }
+        }
+        stage('Installing npm code') {
+            steps {
+                // Install npm code
+                sh 'cd /var/lib/jenkins/workspace/${JOB_NAME} && sudo npm install --no-optional'
+                sh 'cd /var/lib/jenkins/workspace/${JOB_NAME} && sudo npm install -g vsce'
+            }
+        }
+        stage('Run tests') {
+            steps {
+                // Install npm code
+                sh 'cd /var/lib/jenkins/workspace/${JOB_NAME} && vsce package'
+            }
+        }
+        stage('Copy the package') {
+            steps {
+                // Install npm code
+                fileOperations([fileCopyOperation(
+                  excludes: '',
+                  flattenFiles: false,
+                  includes: '/root/myws/cxvscode/*',
+                  targetLocation: "/root/akarsh"
+                )])
+		sh 'sudo cp /var/lib/jenkins/workspace/${JOB_NAME}*.vsix /root/vijay/'
+            }
+        }
+        
+    }
+}
