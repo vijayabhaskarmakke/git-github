@@ -1,11 +1,8 @@
 pipeline {
     agent any
-    triggers {
-        pollSCM "* * * * *"
-    }
     
     stages {
-        stage('Get Code and install Npm Dependencies') {
+        stage('Build') {
             steps {
                 // Get some code from a GitHub repository
                     checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/checkmarx-ltd/cx-common-js-client.git']]])
@@ -13,13 +10,12 @@ pipeline {
             }
 
             post {
-                // If Install Success then publish
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
                 success {
-                    sh 'cd /var/lib/jenkins/workspace/${JOB_NAME} && npm publish'
+                    echo 'Success'
                 }
             }
         }
     }
 }
-
-#
